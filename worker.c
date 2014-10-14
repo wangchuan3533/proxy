@@ -30,7 +30,7 @@ void worker_destroy(worker_t *w)
     // destroy event_base
     if (w) {
         // clear the hash
-        HASH_CLEAR(h1, w->clients); 
+        HASH_CLEAR(hh, w->clients); 
         free(w);
     }
 }
@@ -43,7 +43,6 @@ client_t *client_create()
     }
     // memset
     memset(c, 0, sizeof(client_t));
-    // user_id
     c->headers = http_headers_create();
     c->frame = ws_frame_create();
     return c;
@@ -58,14 +57,31 @@ void client_destroy(client_t *c)
     }
 }
 
+client_index_t *client_index_create()
+{
+    client_index_t *c_i = (client_index_t *)malloc(sizeof(client_index_t));
+    if (NULL == c_i) {
+        err_quit("malloc");
+    }
+    memset(c_i, 0, sizeof(client_index_t));
+    return c_i;
+}
+
+void client_index_destroy(client_index_t *c_i)
+{
+    if (c_i) {
+        free(c_i);
+    }
+}
+
 void worker_delete_from_hash(client_t *c)
 {
     client_t *tmp;
 
     // if in the hash, delete it
-    HASH_FIND(h1, c->worker->clients, &(c->user_id), sizeof(c->user_id), tmp);
+    HASH_FIND(hh, c->worker->clients, &(c->user_id), sizeof(c->user_id), tmp);
     if (tmp && c == tmp) {
-        HASH_DELETE(h1, c->worker->clients, c);
+        HASH_DELETE(hh, c->worker->clients, c);
     }
 }
 
@@ -137,7 +153,7 @@ int proxy_request(client_t *c, void *data, size_t length)
 
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = 0;
-    sin.sin_port = htons(8201);
+    sin.sin_port = htons(ECHO_SERVER_PORT);
 
     bev = bufferevent_socket_new(c->worker->base, -1, BEV_OPT_CLOSE_ON_FREE);
     bufferevent_setcb(bev, proxy_readcb, proxy_writecb, proxy_eventcb, c);
@@ -226,11 +242,12 @@ int websocket_handle(client_t *c)
             worker_delete_from_hash(c);
             // notify the pusher
             cmd.cmd_no = CMD_DEL_CLIENT;
-            cmd.client = c;
+            cmd.data = (void *)c->user_id;
             if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
                 err_quit("evbuffer_add");
             }
             bufferevent_free(c->bev);
+            client_destroy(c);
             break;
         }
         send_close_frame(bufferevent_get_output(c->bev), f->data, f->length);
@@ -274,7 +291,6 @@ void websocket_readcb(struct bufferevent *bev, void *arg)
             if (ret == 0) {
                 // asigned user_id
                 send_handshake(bufferevent_get_output(c->bev), c->headers->sec_websocket_key);
-                c->user_id = atoi(c->headers->user_id);
                 c->state = CLIENT_STATE_HANDSHAKE_STARTED;
                 bufferevent_setcb(bev, websocket_readcb, websocket_writecb, websocket_eventcb, arg);
             // not websocket, send 200 ok, and close socket when finish
@@ -326,17 +342,18 @@ void websocket_writecb(struct bufferevent *bev, void *arg)
     case CLIENT_STATE_HANDSHAKE_STARTED:
         // handshaked , then add to hash
         // check if the user_id exist
-        HASH_FIND(h1, c->worker->clients, &(c->user_id), sizeof(c->user_id), tmp);
+        c->user_id = atoi(c->headers->user_id);
+        HASH_FIND(hh, c->worker->clients, &(c->user_id), sizeof(c->user_id), tmp);
         if (tmp != NULL) {
             send_close_frame(bufferevent_get_output(bev), "already login", strlen("already login"));
             c->close_flag = 1;
             return;
         }
         
-        HASH_ADD(h1, c->worker->clients, user_id, sizeof(c->user_id), c);
+        HASH_ADD(hh, c->worker->clients, user_id, sizeof(c->user_id), c);
         // notify pusher
         cmd.cmd_no = CMD_ADD_CLIENT;
-        cmd.client = c;
+        cmd.data = (void *)c->user_id;
         if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
             err_quit("evbuffer_add");
         }
@@ -349,15 +366,18 @@ void websocket_writecb(struct bufferevent *bev, void *arg)
     }
 
     if (c->close_flag) {
-        // delete from hash
-        worker_delete_from_hash(c);
-        // notify the pusher
-        cmd.cmd_no = CMD_DEL_CLIENT;
-        cmd.client = c;
-        if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
-            err_quit("evbuffer_add");
+        if (c->user_id) {
+            // delete from hash
+            worker_delete_from_hash(c);
+            // notify the pusher
+            cmd.cmd_no = CMD_DEL_CLIENT;
+            cmd.data = (void *)c->user_id;
+            if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
+                err_quit("evbuffer_add");
+            }
         }
         bufferevent_free(bev);
+        client_destroy(c);
     }
 #ifdef TRACE
     printf("%s\n", __FUNCTION__);
@@ -384,13 +404,17 @@ void websocket_eventcb(struct bufferevent *bev, short error, void *arg)
     }
     // delete from hash
     worker_delete_from_hash(c);
+
     // notify the pusher
-    cmd.cmd_no = CMD_DEL_CLIENT;
-    cmd.client = c;
-    if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
-        err_quit("evbuffer_add");
+    if (c->user_id) {
+        cmd.cmd_no = CMD_DEL_CLIENT;
+        cmd.data = (void *)c->user_id;
+        if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
+            err_quit("evbuffer_add");
+        }
     }
     bufferevent_free(bev);
+    client_destroy(c);
 #ifdef TRACE
     printf("%s\n", __FUNCTION__);
 #endif
@@ -408,7 +432,7 @@ void worker_timer(int fd, short event, void *arg)
 int broadcast(worker_t *w, void *data, size_t length)
 {
     client_t *itr, *tmp;
-    HASH_ITER(h1, w->clients, itr, tmp) {
+    HASH_ITER(hh, w->clients, itr, tmp) {
         if (evbuffer_add(bufferevent_get_output(itr->bev), data, length) != 0) {
             err_quit("evbuffer_add");
         }
@@ -488,13 +512,16 @@ void worker_dispatcher_readcb(struct bufferevent *bev, void *arg)
         }
         switch (cmd.cmd_no) {
         case CMD_ADD_CLIENT:
-            c = cmd.client;
+            c = (client_t *)cmd.data;
             bev_client = bufferevent_socket_new(w->base, c->fd, BEV_OPT_CLOSE_ON_FREE);
             if (!bev_client) {
                 err_quit("bufferevent_socket_new");
             }
             c->bev = bev_client;
+            // to debug
+#ifdef ECHO_SERVER
             c->user_id = c->fd;
+#endif
             //bufferevent_setcb(bev_client, echo_broadcastcb, NULL, echo_eventcb, c);
 #ifdef ECHO_SERVER
             bufferevent_setcb(bev_client, echo_readcb, NULL, echo_eventcb, c);
@@ -532,6 +559,8 @@ void worker_dispatcher_eventcb(struct bufferevent *bev, short error, void *arg)
 void worker_pusher_readcb(struct bufferevent *bev, void *arg)
 {
     worker_t *w = (worker_t *)arg;
+    uint64_t user_id;
+    client_t *tmp;
     // push
     cmd_t cmd;
     while (evbuffer_get_length(bufferevent_get_input(bev)) >= sizeof cmd) {
@@ -544,15 +573,25 @@ void worker_pusher_readcb(struct bufferevent *bev, void *arg)
             free(cmd.data);
             break;
         case CMD_DEL_CLIENT:
-            worker_delete_from_hash(cmd.client);
-            send_close_frame(bufferevent_get_output(cmd.client->bev), "already login", strlen("already login"));
-            cmd.client->close_flag = 1;
-            return;
-            bufferevent_free(cmd.client->bev);
-            client_destroy(cmd.client);
+            user_id = (uint64_t)cmd.data;
+            HASH_FIND(hh, w->clients, &user_id, sizeof(user_id), tmp);
+            if (tmp == NULL) {
+                // imposible
+                err_quit("imposible");
+            }
+
+            send_close_frame(bufferevent_get_output(tmp->bev), "already login", strlen("already login"));
+            tmp->close_flag = 1;
+            // TODO TODO
             break;
         case CMD_NOTIFY:
-            send_text_frame(bufferevent_get_output(cmd.client->bev), "message", strlen("message"));
+            user_id = (uint64_t)cmd.data;
+            HASH_FIND(hh, w->clients, &user_id, sizeof(user_id), tmp);
+            if (tmp == NULL) {
+                break;
+            }
+
+            send_text_frame(bufferevent_get_output(tmp->bev), "message", strlen("message"));
             break;
         default:
             break;

@@ -68,7 +68,7 @@ int round_robin_dispatch(dispatcher_t *d, int fd)
     c->fd = fd;
     c->worker = cur;
     cmd.cmd_no = CMD_ADD_CLIENT;
-    cmd.client = c;
+    cmd.data = c;
     if (evbuffer_add(bufferevent_get_output(cur->bev_dispatcher[1]), &cmd, sizeof cmd) != 0) {
         err_quit("evbuffer_add");
     }
@@ -114,9 +114,9 @@ int dispatcher_start(dispatcher_t *d)
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = 0;
 #ifdef ECHO_SERVER
-    sin.sin_port = htons(8201);
+    sin.sin_port = htons(ECHO_SERVER_PORT);
 #else
-    sin.sin_port = htons(8200);
+    sin.sin_port = htons(DISPATCHER_PORT);
 #endif
 
     listener = socket(AF_INET, SOCK_STREAM, 0);

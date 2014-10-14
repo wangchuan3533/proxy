@@ -42,9 +42,7 @@ struct client_s {
     // client state
     client_state_t state;
     // pusher hash handle
-    UT_hash_handle h1;
-    // worker hash handle
-    UT_hash_handle h2;
+    UT_hash_handle hh;
     // close_flag
     int close_flag;
     // fd
@@ -53,10 +51,21 @@ struct client_s {
     worker_t *worker;
 };
 
+struct client_index_s {
+    uint64_t user_id;
+    worker_t *worker;
+    UT_hash_handle hh;
+};
+
 client_t *client_create();
 void client_destroy(client_t *c);
+
+client_index_t *client_index_create();
+void client_index_destroy(client_index_t *c_i);
+
 worker_t *worker_create();
 void worker_destroy(worker_t *s);
+
 int broadcast(worker_t *w, void *data, size_t length);
 int worker_start(worker_t *w);
 int worker_stop(worker_t *w);

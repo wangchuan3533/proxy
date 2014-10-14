@@ -54,14 +54,17 @@ void pusher_destroy(pusher_t *p)
     }
 }
 
-void pusher_delete_from_hash(client_t *c)
+void pusher_delete_from_hash(uint64_t user_id)
 {
-    client_t *tmp;
+    client_index_t *tmp;
 
     // if in the hash, delete it
-    HASH_FIND(h2, global.clients, &(c->user_id), sizeof(c->user_id), tmp);
-    if (tmp && c == tmp) {
-        HASH_DELETE(h2, global.clients, c);
+    HASH_FIND(hh, global.clients, &(user_id), sizeof(user_id), tmp);
+    if (tmp) {
+        HASH_DELETE(hh, global.clients, tmp);
+        free(tmp);
+    } else {
+        printf("Opps\n");
     }
 }
 
@@ -69,7 +72,9 @@ void pusher_worker_readcb(struct bufferevent *bev, void *arg)
 {
     struct evbuffer *input = bufferevent_get_input(bev);
     worker_t *w = (worker_t *)arg;
-    client_t *c, *tmp;
+    client_index_t *tmp;
+    uint64_t user_id;
+
     cmd_t cmd;
 
     while (evbuffer_get_length(input) >= sizeof cmd) {
@@ -81,9 +86,9 @@ void pusher_worker_readcb(struct bufferevent *bev, void *arg)
 #ifdef TRACE
     printf("client added\n");
 #endif
-            c = cmd.client;
+            user_id = (uint64_t)cmd.data;
             // check if the client exists
-            HASH_FIND(h2, global.clients, &(c->user_id), sizeof(c->user_id), tmp);
+            HASH_FIND(hh, global.clients, &(user_id), sizeof(user_id), tmp);
             // found, reject it
             if (tmp != NULL) {
                 cmd.cmd_no = CMD_DEL_CLIENT;
@@ -92,15 +97,17 @@ void pusher_worker_readcb(struct bufferevent *bev, void *arg)
                 }
                 break;
             }
-            HASH_ADD(h2, global.clients, user_id, sizeof(c->user_id), c);
+            tmp = client_index_create();
+            tmp->user_id = user_id;
+            tmp->worker = w;
+            HASH_ADD(hh, global.clients, user_id, sizeof(tmp->user_id), tmp);
             break;
         case CMD_DEL_CLIENT:
 #ifdef TRACE
     printf("client deleted\n");
 #endif
-            c = cmd.client;
-            pusher_delete_from_hash(c);
-            client_destroy(c);
+            user_id = (uint64_t)cmd.data;
+            pusher_delete_from_hash(user_id);
             break;
         case CMD_BROADCAST:
             broadcast_to_worker(cmd.data, cmd.length);
@@ -145,10 +152,10 @@ void pusher_notifier_readcb(struct bufferevent *bev, void *arg)
     user_id = atoi(str_user_id);
 
     // find the client
-    HASH_FIND(h1, global.clients, &user_id, sizeof(user_id), tmp);
+    HASH_FIND(hh, global.clients, &user_id, sizeof(user_id), tmp);
     if (tmp) {
         cmd.cmd_no = CMD_NOTIFY;
-        cmd.client = tmp;
+        cmd.data = (void *)user_id;
         if (evbuffer_add(bufferevent_get_output(tmp->worker->bev_pusher[1]), &cmd, sizeof(cmd)) != 0) {
             err_quit("evbuffer_add");
         }

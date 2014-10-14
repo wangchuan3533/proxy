@@ -118,7 +118,7 @@ int notifier_start(notifier_t *n)
 
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = 0;
-    sin.sin_port = htons(8202);
+    sin.sin_port = htons(NOTIFIER_PORT);
 
     listener = socket(AF_INET, SOCK_STREAM, 0);
     evutil_make_listen_socket_reuseable(listener);

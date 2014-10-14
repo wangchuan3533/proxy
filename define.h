@@ -29,11 +29,18 @@
 #define WORKER_NUM 4
 #define CLIENT_HIGH_WATERMARK 4096
 
+
+#define DISPATCHER_PORT 8200
+#define ECHO_SERVER_PORT 8201
+#define NOTIFIER_PORT 8202
+
+
 struct dispatcher_s;
 struct worker_s;
 struct pusher_s;
 struct notifier_s;
 struct client_s;
+struct client_index_s;
 struct global_s;
 enum http_headers_state_s;
 struct http_headers_s;
@@ -47,6 +54,7 @@ typedef struct dispatcher_s dispatcher_t;
 typedef struct worker_s worker_t;
 typedef struct pusher_s pusher_t;
 typedef struct client_s client_t;
+typedef struct client_index_s client_index_t;
 typedef struct notifier_s notifier_t;
 typedef struct global_s global_t;
 typedef enum http_headers_state_s http_headers_state_t;
@@ -58,8 +66,8 @@ typedef enum cmd_no_e cmd_no_t;
 typedef struct cmd_s cmd_t;
 
 struct global_s {
-    struct worker_s *workers;
-    struct client_s *clients;
+    worker_t *workers;
+    client_index_t *clients;
 };
 
 enum cmd_no_e {
@@ -72,7 +80,6 @@ enum cmd_no_e {
 
 struct cmd_s {
     cmd_no_t cmd_no;
-    client_t *client;
     void *data;
     size_t length; 
 };

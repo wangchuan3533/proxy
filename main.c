@@ -30,12 +30,14 @@ int main(int argc, char **argv)
         err_quit("pusher_start");
     }
 
+#ifndef ECHO_SERVER
     n = notifier_create();
     n->pusher = p;
     ret = notifier_start(n);
     if (ret != 0) {
         err_quit("notifier_start");
     }
+#endif
 
     d = dispatcher_create();
     ret = dispatcher_start(d);
