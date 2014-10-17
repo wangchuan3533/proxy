@@ -11,9 +11,13 @@ int main(int argc, char **argv)
     dispatcher_t *d;
     worker_t *w;
     pusher_t *p;
+#ifndef ECHO_SERVER
     notifier_t *n;
+#endif
 
+#ifdef SEE_DATA
     setvbuf(stdout, NULL, _IONBF, 0);
+#endif
     for (i = 0; i < WORKER_NUM; i++) {
         w = worker_create();
         w->next = global.workers;

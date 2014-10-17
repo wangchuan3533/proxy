@@ -1,6 +1,27 @@
 #include "define.h"
+#include "http.h"
 #include "websocket.h"
 #include "worker.h"
+
+#if 0
+client_state_t fsm_http_parse(client_t *c, client_state_t state, client_event_t event)
+{
+    assert(event == CLIENT_EVENT_READ);
+
+    if (c->state == CLIENT_STATE_ACCEPTED) {
+        c->state = CLIENT_STATE_HTTP_RESPONSE_FINISHED;
+        // c->headers = http_request_create();
+    }
+
+    ret = parse_http(bufferevent_get_input(c->bev), c->headers);
+    return 0;
+}
+
+fsm_func_t fsm_table[CLIENT_STATE_COUNT][CLIENT_EVENT_COUNT] = 
+{
+    {NULL}
+};
+#endif
 
 worker_t *worker_create()
 {
@@ -43,7 +64,7 @@ client_t *client_create()
     }
     // memset
     memset(c, 0, sizeof(client_t));
-    c->headers = http_headers_create();
+    c->headers = http_request_create();
     c->frame = ws_frame_create();
     return c;
 }
@@ -52,7 +73,7 @@ void client_destroy(client_t *c)
 {
     if (c) {
         ws_frame_destroy(c->frame);
-        http_headers_destroy(c->headers);
+        http_request_destroy(c->headers);
         free(c);
     }
 }
@@ -174,7 +195,7 @@ int websocket_broadcast(worker_t *w, void *data, size_t len)
     int ret;
     void *tmp;
     size_t length;
-    cmd_t cmd;
+    cmd_t cmd = {0};
     struct evbuffer *buffer = evbuffer_new();
 
     ret = send_text_frame(buffer, data, len);
@@ -199,11 +220,256 @@ int websocket_broadcast(worker_t *w, void *data, size_t len)
     return 0;
 }
 
+// FSM process
+int client_process(client_t *c, client_event_t event)
+{
+    switch (c->state) {
+    case CLIENT_STATE_ACCEPTED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_HTTP_REQUEST_PARSING:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_HANDSHAKE_SENT:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_HANDSHAKE_FINISHED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_REQUEST_PARSING:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_REQUEST_FINISHED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_PROXY_CONNECTED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_PROXY_REQUEST_SENT:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_PROXY_REQUEST_FINISHED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_PROXY_RESPONSE_PARSING:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_PROXY_RESPONSE_FINISHED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_RESPONSE_SENT:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_RESPONSE_FINISHED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_CLOSE_FRAME_RECEIVED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_WEBSOCKET_CLOSE_FRAME_SENT:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_HTTP_RESPONSE_SENT:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    case CLIENT_STATE_HTTP_RESPONSE_FINISHED:
+        switch (event) {
+        case CLIENT_EVENT_READ:
+            break;
+        case CLIENT_EVENT_WRITE:
+            break;
+        case CLIENT_EVENT_TIMEOUT:
+            break;
+        case CLIENT_EVENT_ERROR:
+            break;
+        default:
+            break;
+        }
+        break;
+    }
+    return 0;
+}
+
 int websocket_handle(client_t *c)
 {
     websocket_frame_t *f = c->frame;
-    cmd_t cmd;
-    char str[128];
+    cmd_t cmd = {0};
 
     switch (f->opcode) {
     case OPCODE_PING_FRAME:
@@ -217,10 +483,13 @@ int websocket_handle(client_t *c)
 #endif
 
 #if 0
-        // websocket broadcast
-        sprintf(str, "[%lu]: ", c->user_id);
-        strncat(str, f->data, f->length);
-        websocket_broadcast(c->worker, str, strlen(str));
+        {
+            char str[128];
+            // websocket broadcast
+            sprintf(str, "[%lu]: ", c->user_id);
+            strncat(str, f->data, f->length);
+            websocket_broadcast(c->worker, str, strlen(str));
+        }
 #endif
 
 #if 1
@@ -277,14 +546,14 @@ void websocket_readcb(struct bufferevent *bev, void *arg)
                 // TODO error handling
                 return;
             }
-            if (c->headers->state != HTTP_HEADERS_STATE_FINISHED) {
+            if (c->headers->state != HTTP_REQUEST_STATE_FINISHED) {
                 // TODO is this ok?
                 return;
             }
 
             // parse finished
 #ifdef TRACE
-    print_http_headers(c->headers);
+    print_http_request(c->headers);
 #endif
             // check the websocket request
             ret = check_websocket_request(c->headers);
@@ -295,7 +564,7 @@ void websocket_readcb(struct bufferevent *bev, void *arg)
                 bufferevent_setcb(bev, websocket_readcb, websocket_writecb, websocket_eventcb, arg);
             // not websocket, send 200 ok, and close socket when finish
             } else {
-                send_200_ok(bufferevent_get_output(c->bev));
+                send_http_response(bufferevent_get_output(c->bev));
                 c->close_flag = 1;
                 bufferevent_setcb(bev, websocket_readcb, websocket_writecb, websocket_eventcb, arg);
             }
@@ -333,7 +602,7 @@ void websocket_readcb(struct bufferevent *bev, void *arg)
 void websocket_writecb(struct bufferevent *bev, void *arg)
 {
     client_t *c = (client_t *)arg, *tmp;
-    cmd_t cmd;
+    cmd_t cmd = {0};
 
     // clear the write cb
     bufferevent_setcb(bev, websocket_readcb, NULL, websocket_eventcb, arg);
@@ -342,7 +611,7 @@ void websocket_writecb(struct bufferevent *bev, void *arg)
     case CLIENT_STATE_HANDSHAKE_STARTED:
         // handshaked , then add to hash
         // check if the user_id exist
-        c->user_id = atoi(c->headers->user_id);
+        c->user_id = atoi(c->headers->request_uri + 1);
         HASH_FIND(hh, c->worker->clients, &(c->user_id), sizeof(c->user_id), tmp);
         if (tmp != NULL) {
             send_close_frame(bufferevent_get_output(bev), "already login", strlen("already login"));
@@ -387,7 +656,7 @@ void websocket_writecb(struct bufferevent *bev, void *arg)
 void websocket_eventcb(struct bufferevent *bev, short error, void *arg)
 {
     client_t *c = (client_t *)arg;
-    cmd_t cmd;
+    cmd_t cmd = {0};
     if (error & BEV_EVENT_EOF) {
         /* connection has been closed, do any clean up here */
         if (!c->close_flag) {
@@ -458,24 +727,8 @@ void echo_readcb(struct bufferevent *bev, void *arg)
 #endif
 }
 
-void echo_broadcastcb(struct bufferevent *bev, void *arg)
+void echo_writecb(struct bufferevent *bev, void *arg)
 {
-    client_t *c = (client_t *)arg;
-    struct evbuffer *input = bufferevent_get_input(bev);
-    void *data; 
-    size_t len;
-    cmd_t cmd;
-    len = evbuffer_get_length(input);
-    data = malloc(len);
-    if (evbuffer_remove(input, data, len) != len) {
-        err_quit("evbuffer_remove");
-    }
-    cmd.cmd_no = CMD_BROADCAST;
-    cmd.data = data;
-    cmd.length = len;
-    if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
-        err_quit("evbuffer_add");
-    }
 #ifdef TRACE
     printf("%s\n", __FUNCTION__);
 #endif
@@ -483,7 +736,6 @@ void echo_broadcastcb(struct bufferevent *bev, void *arg)
 
 void echo_eventcb(struct bufferevent *bev, short error, void *arg)
 {
-    client_t *c = (client_t *)arg;
     if (error | BEV_EVENT_TIMEOUT) {
         // TODO
     } else if (error | BEV_EVENT_ERROR) {
@@ -491,7 +743,6 @@ void echo_eventcb(struct bufferevent *bev, short error, void *arg)
     }
 
     bufferevent_free(bev);
-    client_destroy(c);
 #ifdef TRACE
     printf("%s\n", __FUNCTION__);
 #endif
@@ -504,7 +755,7 @@ void worker_dispatcher_readcb(struct bufferevent *bev, void *arg)
     struct timeval timeout = {1000, 0};
     struct evbuffer *input = bufferevent_get_input(bev);
     client_t *c;
-    cmd_t cmd;
+    cmd_t cmd = {0};
 
     while (evbuffer_get_length(input) >= sizeof cmd) {
         if (evbuffer_remove(input, &cmd, sizeof cmd) != sizeof cmd) {
@@ -512,22 +763,44 @@ void worker_dispatcher_readcb(struct bufferevent *bev, void *arg)
         }
         switch (cmd.cmd_no) {
         case CMD_ADD_CLIENT:
-            c = (client_t *)cmd.data;
+            c = client_create();
+            c->fd = (int)(uint64_t)cmd.data;
+            c->worker = w;
             bev_client = bufferevent_socket_new(w->base, c->fd, BEV_OPT_CLOSE_ON_FREE);
             if (!bev_client) {
                 err_quit("bufferevent_socket_new");
             }
             c->bev = bev_client;
-            // to debug
-#ifdef ECHO_SERVER
-            c->user_id = c->fd;
-#endif
-            //bufferevent_setcb(bev_client, echo_broadcastcb, NULL, echo_eventcb, c);
-#ifdef ECHO_SERVER
-            bufferevent_setcb(bev_client, echo_readcb, NULL, echo_eventcb, c);
-#else
             bufferevent_setcb(bev_client, websocket_readcb, NULL, websocket_eventcb, c);
+            bufferevent_setwatermark(bev_client, EV_READ, 0, CLIENT_HIGH_WATERMARK);
+            bufferevent_enable(bev_client, EV_READ | EV_WRITE);
+            bufferevent_set_timeouts(bev_client, &timeout, &timeout);
+            break;
+        default:
+            break;
+        }
+    }
+#ifdef TRACE
+    printf("%s\n", __FUNCTION__);
 #endif
+}
+
+void worker_dispatcher_readcb_echo(struct bufferevent *bev, void *arg)
+{
+    worker_t *w = (worker_t *)arg;
+    struct bufferevent *bev_client;
+    struct timeval timeout = {1000, 0};
+    struct evbuffer *input = bufferevent_get_input(bev);
+    cmd_t cmd = {0};
+
+    while (evbuffer_get_length(input) >= sizeof cmd) {
+        if (evbuffer_remove(input, &cmd, sizeof cmd) != sizeof cmd) {
+            err_quit("evbuffer_remove");
+        }
+        switch (cmd.cmd_no) {
+        case CMD_ADD_CLIENT:
+            bev_client = bufferevent_socket_new(w->base, (int)(uint64_t)cmd.data, BEV_OPT_CLOSE_ON_FREE);
+            bufferevent_setcb(bev_client, echo_readcb, NULL, echo_eventcb, NULL);
             bufferevent_setwatermark(bev_client, EV_READ, 0, CLIENT_HIGH_WATERMARK);
             bufferevent_enable(bev_client, EV_READ | EV_WRITE);
             bufferevent_set_timeouts(bev_client, &timeout, &timeout);
@@ -562,7 +835,7 @@ void worker_pusher_readcb(struct bufferevent *bev, void *arg)
     uint64_t user_id;
     client_t *tmp;
     // push
-    cmd_t cmd;
+    cmd_t cmd = {0};
     while (evbuffer_get_length(bufferevent_get_input(bev)) >= sizeof cmd) {
         if (evbuffer_remove(bufferevent_get_input(bev), &cmd, sizeof cmd) != sizeof cmd) {
             err_quit("evbuffer_remove");
@@ -620,7 +893,11 @@ void *worker_loop(void *arg)
     if (!w->bev_dispatcher[0]) {
         err_quit("bufferevent_socket_new");
     }
+#ifdef ECHO_SERVER
+    bufferevent_setcb(w->bev_dispatcher[0], worker_dispatcher_readcb_echo, NULL, worker_dispatcher_eventcb, w);
+#else
     bufferevent_setcb(w->bev_dispatcher[0], worker_dispatcher_readcb, NULL, worker_dispatcher_eventcb, w);
+#endif
     bufferevent_setwatermark(w->bev_dispatcher[0], EV_READ, sizeof(cmd_t), 0);
     bufferevent_enable(w->bev_dispatcher[0], EV_READ | EV_WRITE);
 

@@ -58,17 +58,14 @@ void dispatcher_worker_eventcb(struct bufferevent *bev, short error, void *arg)
 int round_robin_dispatch(dispatcher_t *d, int fd)
 {
     static worker_t *cur = NULL;
-    client_t *c = client_create();
-    cmd_t cmd;
+    cmd_t cmd = {0};
 
     if (!cur) {
         cur = global.workers;
     }
 
-    c->fd = fd;
-    c->worker = cur;
     cmd.cmd_no = CMD_ADD_CLIENT;
-    cmd.data = c;
+    cmd.data = (void *)(uint64_t)fd;
     if (evbuffer_add(bufferevent_get_output(cur->bev_dispatcher[1]), &cmd, sizeof cmd) != 0) {
         err_quit("evbuffer_add");
     }

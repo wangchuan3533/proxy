@@ -5,7 +5,7 @@
 int broadcast_to_worker(void *data, size_t length)
 {
     worker_t *w;
-    cmd_t cmd;
+    cmd_t cmd = {0};
     //printf("pusher timer\n");
     for (w = global.workers; w != NULL; w = w->next) {
         cmd.cmd_no = CMD_BROADCAST;
@@ -75,7 +75,7 @@ void pusher_worker_readcb(struct bufferevent *bev, void *arg)
     client_index_t *tmp;
     uint64_t user_id;
 
-    cmd_t cmd;
+    cmd_t cmd = {0};
 
     while (evbuffer_get_length(input) >= sizeof cmd) {
         if (evbuffer_remove(input, &cmd, sizeof cmd) != sizeof cmd) {
@@ -142,7 +142,7 @@ void pusher_notifier_readcb(struct bufferevent *bev, void *arg)
     uint64_t user_id;
     client_t *tmp;
     size_t len;
-    cmd_t cmd;
+    cmd_t cmd = {0};
 
     len = evbuffer_get_length(bufferevent_get_input(bev));
     if (evbuffer_remove(bufferevent_get_input(bev), str_user_id, len) != len) {

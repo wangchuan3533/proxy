@@ -1,16 +1,6 @@
 #ifndef  __WEBSOCKET_H_
 #define  __WEBSOCKET_H_
 
-#define MAX_HTTP_HEADERS 128
-#define HTTP_HEADER_HOST "Host:"
-#define HTTP_HEADER_USER_AGENT "User-Agent:"
-#define HTTP_HEADER_COOKIE "Cookie:"
-#define HTTP_HEADER_CONNECTION "Connection:"
-#define HTTP_HEADER_UPGRADE "Upgrade:"
-#define HTTP_HEADER_SEC_WEBSOCKET_KEY "Sec-WebSocket-Key:"
-#define HTTP_HEADER_SEC_WEBSOCKET_PROTOCOL "Sec-WebSocket-Protocol:"
-#define HTTP_HEADER_SEC_WEBSOCKET_VERSION "Sec-WebSocket-Version:"
-
 /* Websocket protocol RFC6455 */
 #define OPCODE_CONTINUATION_FRAME  0x0
 #define OPCODE_TEXT_FRAME          0x1
@@ -21,44 +11,18 @@
 
 #define MAX_WEBSOCKET_HEADER_LENGTH 14 //(2 + 8 + 4)
 
-enum http_headers_state_s {
-    HTTP_HEADERS_STATE_STEP_0 = 0,
-    HTTP_HEADERS_STATE_PARSED_REQUEST_LINE,
-    HTTP_HEADERS_STATE_FINISHED
-};
-
-struct http_headers_s {
-    //first line
-    char *method;
-    char *request_uri;
-    char *http_version;
-
-    // headers
-    char *host;
-    char *user_agent;
-    char *cookie;
-    char *connection;
-    char *upgrade;
-    char *sec_websocket_key;
-    char *sec_websocket_protocol;
-    char *sec_websocket_version;
-
-    // special
-    char *user_id;
-
-    // buffers & buffers count
-    char *buffers[MAX_HTTP_HEADERS];
-    size_t count;
-    // state
-    http_headers_state_t state;
-};
+#define MAX_FRAME_SIZE 0x100000 // max frame size 1M bytes 
 
 enum frame_state_e {
-    FRAME_STATE_STEP_0 = 0,
-    FRAME_STATE_STEP_1,
-    FRAME_STATE_STEP_2,
-    FRAME_STATE_STEP_3,
-    FRAME_STATE_FINISHED
+    FRAME_STATE_STARTED = 0,
+    FRAME_STATE_OPCODE_PARSED,
+    FRAME_STATE_LENGTH_PARSED,
+    FRAME_STATE_MASK_KEY_PARSED,
+    FRAME_STATE_DATA_READING,
+    FRAME_STATE_FINISHED,
+    FRAME_STATE_ERROR,
+
+    FRAME_STATE_COUNT
 };
 
 struct websocket_frame_s {
@@ -86,24 +50,20 @@ struct websocket_frame_s {
     uint64_t length;
     uint64_t cur;
 
+#if 0
     // double linked list
     struct websocket_frame_s *next;
     struct websocket_frame_s *prev;
+#endif
 
 };
 
-http_headers_t *http_headers_create();
-void http_headers_destroy(http_headers_t *h);
-void print_http_headers(http_headers_t *h);
-int parse_http(struct evbuffer *b, http_headers_t *h);
+websocket_frame_t *websocket_frame_create();
+void websocket_frame_destroy(websocket_frame_t *f);
+void websocket_frame_clear(websocket_frame_t *f);
+int check_websocket_request(http_request_t *h);
+frame_state_t parse_frame(struct evbuffer *b, websocket_frame_t *f);
 
-websocket_frame_t *ws_frame_create();
-void ws_frame_destroy(websocket_frame_t *f);
-void ws_frame_clear(websocket_frame_t *f);
-int check_websocket_request(http_headers_t *h);
-int parse_frame(struct evbuffer *b, websocket_frame_t *f);
-
-int send_200_ok(struct evbuffer *b);
 int send_handshake(struct evbuffer *b, const char *websocket_key);
 int send_text_frame(struct evbuffer *b, const void *data, size_t len);
 int send_ping_frame(struct evbuffer *b, const void *data, size_t len);
