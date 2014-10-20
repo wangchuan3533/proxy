@@ -500,20 +500,102 @@ MU_TEST(test_websocket_send_text_frame)
 MU_TEST(test_websocket_send_binary_frame)
 {
     struct evbuffer *buf = evbuffer_new();
-    uint8_t data[1024];
-    size_t len;
+    uint8_t data[1024] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00};
+    size_t len = 10;
 
-    len = sprintf(data, "hello world");
     send_text_frame(buf, data, len);
     len = evbuffer_remove(buf, data, sizeof(data));
-    mu_check(len == 13
-            && data[0] == 0x81
-            && data[1] == 0x0b
-            && strncmp(data + 2, "hello world", 11) == 0
+    mu_check(len == 12
+            && data[0] == 0x82
+            && data[1] == 0x0a
+            && data[2] == 0x01
+            && data[3] == 0x02
+            && data[4] == 0x03
+            && data[5] == 0x04
+            && data[6] == 0x05
+            && data[7] == 0x06
+            && data[8] == 0x07
+            && data[9] == 0x08
+            && data[10] == 0x09
+            && data[11] == 0x00
             );
     evbuffer_free(buf);
 }
 
+MU_TEST(test_websocket_send_close_frame)
+{
+    struct evbuffer *buf = evbuffer_new();
+    uint8_t data[1024] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00};
+    size_t len = 10;
+
+    send_close_frame(buf, data, len);
+    len = evbuffer_remove(buf, data, sizeof(data));
+    mu_check(len == 12
+            && data[0] == 0x88
+            && data[1] == 0x0a
+            && data[2] == 0x01
+            && data[3] == 0x02
+            && data[4] == 0x03
+            && data[5] == 0x04
+            && data[6] == 0x05
+            && data[7] == 0x06
+            && data[8] == 0x07
+            && data[9] == 0x08
+            && data[10] == 0x09
+            && data[11] == 0x00
+            );
+    evbuffer_free(buf);
+}
+
+MU_TEST(test_websocket_send_ping_frame)
+{
+    struct evbuffer *buf = evbuffer_new();
+    uint8_t data[1024] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00};
+    size_t len = 10;
+
+    send_ping_frame(buf, data, len);
+    len = evbuffer_remove(buf, data, sizeof(data));
+    mu_check(len == 12
+            && data[0] == 0x81
+            && data[1] == 0x0a
+            && data[2] == 0x01
+            && data[3] == 0x02
+            && data[4] == 0x03
+            && data[5] == 0x04
+            && data[6] == 0x05
+            && data[7] == 0x06
+            && data[8] == 0x07
+            && data[9] == 0x08
+            && data[10] == 0x09
+            && data[11] == 0x00
+            );
+    evbuffer_free(buf);
+}
+
+MU_TEST(test_websocket_send_pong_frame)
+{
+    struct evbuffer *buf = evbuffer_new();
+    uint8_t data[1024] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00};
+    size_t len = 10;
+
+    send_pong_frame(buf, data, len);
+    len = evbuffer_remove(buf, data, sizeof(data));
+    mu_check(len == 12
+            && data[0] == 0x81
+            && data[1] == 0x0a
+            && data[2] == 0x01
+            && data[3] == 0x02
+            && data[4] == 0x03
+            && data[5] == 0x04
+            && data[6] == 0x05
+            && data[7] == 0x06
+            && data[8] == 0x07
+            && data[9] == 0x08
+            && data[10] == 0x09
+            && data[11] == 0x00
+            );
+    evbuffer_free(buf);
+}
 
 MU_TEST_SUITE(test_websocket)
 {
@@ -528,7 +610,12 @@ MU_TEST_SUITE(test_websocket)
     MU_RUN_TEST(test_websocket_parse_frame8);
     MU_RUN_TEST(test_websocket_parse_frame9);
     MU_RUN_TEST(test_websocket_parse_frame10);
+
     MU_RUN_TEST(test_websocket_send_text_frame);
+    MU_RUN_TEST(test_websocket_send_binary_frame);
+    MU_RUN_TEST(test_websocket_send_close_frame);
+    MU_RUN_TEST(test_websocket_send_ping_frame);
+    MU_RUN_TEST(test_websocket_send_pong_frame);
 }
 
 int main()

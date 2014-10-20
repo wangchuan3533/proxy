@@ -221,17 +221,17 @@ int websocket_broadcast(worker_t *w, void *data, size_t len)
 }
 
 // FSM process
-int client_process(client_t *c, client_event_t event)
+client_state_t fsm_process(client_t *c, client_event_t event)
 {
     switch (c->state) {
     case CLIENT_STATE_ACCEPTED:
         switch (event) {
         case CLIENT_EVENT_READ:
-            break;
+            c->state = CLIENT_STATE_HTTP_REQUEST_PARSING;
+            return fsm_process(c, event);
         case CLIENT_EVENT_WRITE:
-            break;
+            goto finished;
         case CLIENT_EVENT_TIMEOUT:
-            break;
         case CLIENT_EVENT_ERROR:
             break;
         default:
