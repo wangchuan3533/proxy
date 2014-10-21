@@ -24,7 +24,7 @@ void http_request_destroy(http_request_t *h)
 }
 
 // TODO filter invalid request
-http_request_state_t parse_http(struct evbuffer *b, http_request_t *h)
+http_request_state_t http_request_parse(struct evbuffer *b, http_request_t *h)
 {
     char *line, *tmp;
     size_t n;
@@ -70,7 +70,7 @@ http_request_state_t parse_http(struct evbuffer *b, http_request_t *h)
                 goto finished;
             }
 
-            // parse headers
+            // parse request
             if (!h->host && strncasecmp(HTTP_HEADER_HOST, line, strlen(HTTP_HEADER_HOST)) == 0) {
                 tmp = strchr(line, ' ');
                 h->host = tmp + 1;
@@ -195,6 +195,9 @@ int send_http_response(struct evbuffer *b, int response)
         break;
     case 400:
         resp = HTTP_RESPONSE_400;
+        break;
+    case 403:
+        resp = HTTP_RESPONSE_403;
         break;
     case 404:
     default:

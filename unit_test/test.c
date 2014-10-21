@@ -9,8 +9,8 @@ MU_TEST(test_http_1)
     http_request_state_t state;
     http_request_t *req = http_request_create();
     evbuffer_add_printf(buf, "HELLO world");
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_STARTED);
@@ -24,8 +24,8 @@ MU_TEST(test_http_2)
     http_request_state_t state;
     http_request_t *req = http_request_create();
     evbuffer_add_printf(buf, "HELLO\r\n");
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_ERROR);
@@ -38,8 +38,8 @@ MU_TEST(test_http_3)
     http_request_state_t state;
     http_request_t *req = http_request_create();
     evbuffer_add_printf(buf, "GET /\r\n");
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_ERROR);
@@ -53,8 +53,8 @@ MU_TEST(test_http_4)
     http_request_state_t state;
     http_request_t *req = http_request_create();
     evbuffer_add_printf(buf, "GET / HTTP/1.1\r\n");
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_PARSED_FIRST_LINE);
@@ -71,8 +71,8 @@ MU_TEST(test_http_5)
             "GET / HTTP/1.1\r\n"
             "Host: websocket"
             );
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_PARSED_FIRST_LINE);
@@ -89,8 +89,8 @@ MU_TEST(test_http_6)
             "GET / HTTP/1.1\r\n"
             "Host: websocket\r\n"
             );
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_HEADERS_PARSING);
@@ -109,8 +109,8 @@ MU_TEST(test_http_7)
             "hello\r\n"
             "world\r\n"
             );
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_HEADERS_PARSING && req->count == 2);
@@ -128,8 +128,8 @@ MU_TEST(test_http_8)
             "Host: websocket\r\n"
             "\r\n"
             );
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_FINISHED && req->count == 2);
@@ -148,8 +148,8 @@ MU_TEST(test_http_9)
             "Connection: Close\r\n"
             "\r\n"
             );
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_FINISHED && req->count == 3);
@@ -169,8 +169,8 @@ MU_TEST(test_http_finish)
             "Connection: Upgrade\r\n"
             "\r\n"
             );
-    state = parse_http(buf, req);
-#ifdef DUMP
+    state = http_request_parse(buf, req);
+#ifdef DUMP_DATA
     print_http_request(req);
 #endif
     mu_check(state == HTTP_REQUEST_STATE_FINISHED);
@@ -503,7 +503,7 @@ MU_TEST(test_websocket_send_binary_frame)
     uint8_t data[1024] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x00};
     size_t len = 10;
 
-    send_text_frame(buf, data, len);
+    send_binary_frame(buf, data, len);
     len = evbuffer_remove(buf, data, sizeof(data));
     mu_check(len == 12
             && data[0] == 0x82
@@ -556,7 +556,7 @@ MU_TEST(test_websocket_send_ping_frame)
     send_ping_frame(buf, data, len);
     len = evbuffer_remove(buf, data, sizeof(data));
     mu_check(len == 12
-            && data[0] == 0x81
+            && data[0] == 0x89
             && data[1] == 0x0a
             && data[2] == 0x01
             && data[3] == 0x02
@@ -581,7 +581,7 @@ MU_TEST(test_websocket_send_pong_frame)
     send_pong_frame(buf, data, len);
     len = evbuffer_remove(buf, data, sizeof(data));
     mu_check(len == 12
-            && data[0] == 0x81
+            && data[0] == 0x8a
             && data[1] == 0x0a
             && data[2] == 0x01
             && data[3] == 0x02

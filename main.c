@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     notifier_t *n;
 #endif
 
-#ifdef SEE_DATA
+#ifdef DUMP_DATA
     setvbuf(stdout, NULL, _IONBF, 0);
 #endif
     for (i = 0; i < WORKER_NUM; i++) {

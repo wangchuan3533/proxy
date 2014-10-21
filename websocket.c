@@ -22,16 +22,6 @@ void websocket_frame_destroy(websocket_frame_t *f)
     }
 }
 
-void websocket_frame_clear(websocket_frame_t *f)
-{
-    if (f) {
-        if (f->data) {
-            free(f->data);
-        }
-        memset(f, 0, sizeof(websocket_frame_t));
-    }
-}
-
 frame_state_t parse_frame(struct evbuffer *b, websocket_frame_t *f)
 {
     uint8_t buf[MAX_WEBSOCKET_HEADER_LENGTH];

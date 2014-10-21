@@ -60,7 +60,6 @@ struct websocket_frame_s {
 
 websocket_frame_t *websocket_frame_create();
 void websocket_frame_destroy(websocket_frame_t *f);
-void websocket_frame_clear(websocket_frame_t *f);
 int check_websocket_request(http_request_t *h);
 frame_state_t parse_frame(struct evbuffer *b, websocket_frame_t *f);
 

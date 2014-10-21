@@ -24,6 +24,12 @@
         "Content-Length: 0\r\n"\
         "Connection: close\r\n"\
         "Content-Type: text/html\r\n\r\n"
+#define HTTP_RESPONSE_403 \
+        "HTTP/1.1 403 Forbidden\r\n"\
+        "Server: WebSocket\r\n"\
+        "Content-Length: 0\r\n"\
+        "Connection: close\r\n"\
+        "Content-Type: text/html\r\n\r\n"
 #define HTTP_RESPONSE_404 \
         "HTTP/1.1 404 Not Found\r\n"\
         "Server: WebSocket\r\n"\
@@ -52,7 +58,7 @@ struct http_request_s {
     char *request_uri;
     char *http_version;
 
-    // headers
+    // request
     char *host;
     char *user_agent;
     char *cookie;
@@ -72,7 +78,7 @@ struct http_request_s {
 http_request_t *http_request_create();
 void http_request_destroy(http_request_t *h);
 void print_http_request(http_request_t *h);
-http_request_state_t parse_http(struct evbuffer *b, http_request_t *h);
+http_request_state_t http_request_parse(struct evbuffer *b, http_request_t *h);
 int send_http_response(struct evbuffer *b, int response);
 
 #endif
