@@ -81,6 +81,9 @@ struct client_s {
     // websocket close handshake
     uint8_t close_frame_sent;
 
+    // id conflict
+    uint8_t id_confict;
+
     // notify send mark
     uint8_t notify_frame_sent;
 };

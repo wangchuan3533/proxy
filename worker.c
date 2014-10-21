@@ -385,11 +385,13 @@ websocket_closed:
     if (c->user_id) {
         // delete from hash
         worker_delete_from_hash(c);
-        // notify the pusher
-        cmd.cmd_no = CMD_DEL_CLIENT;
-        cmd.data = (void *)c->user_id;
-        if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
-            err_quit("evbuffer_add");
+        if (!c->id_confict) {
+            // notify the pusher
+            cmd.cmd_no = CMD_DEL_CLIENT;
+            cmd.data = (void *)c->user_id;
+            if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
+                err_quit("evbuffer_add");
+            }
         }
     }
 closed:
@@ -449,11 +451,13 @@ websocket_closed:
     if (c->user_id) {
         // delete from hash
         worker_delete_from_hash(c);
-        // notify the pusher
-        cmd.cmd_no = CMD_DEL_CLIENT;
-        cmd.data = (void *)c->user_id;
-        if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
-            err_quit("evbuffer_add");
+        if (!c->id_confict) {
+            // notify the pusher
+            cmd.cmd_no = CMD_DEL_CLIENT;
+            cmd.data = (void *)c->user_id;
+            if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
+                err_quit("evbuffer_add");
+            }
         }
     }
 closed:
@@ -508,10 +512,12 @@ websocket_closed:
         // delete from hash
         worker_delete_from_hash(c);
         // notify the pusher
-        cmd.cmd_no = CMD_DEL_CLIENT;
-        cmd.data = (void *)c->user_id;
-        if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
-            err_quit("evbuffer_add");
+        if (!c->id_confict) {
+            cmd.cmd_no = CMD_DEL_CLIENT;
+            cmd.data = (void *)c->user_id;
+            if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
+                err_quit("evbuffer_add");
+            }
         }
     }
 closed:
@@ -680,6 +686,7 @@ void worker_pusher_readcb(struct bufferevent *bev, void *arg)
             send_close_frame(bufferevent_get_output(tmp->bev), "already login", strlen("already login"));
             bufferevent_enable(tmp->bev, EV_WRITE);
             tmp->close_frame_sent = 1;
+            tmp->id_confict = 1;
             break;
         case CMD_NOTIFY:
             user_id = (uint64_t)cmd.data;

@@ -140,7 +140,7 @@ void pusher_notifier_readcb(struct bufferevent *bev, void *arg)
 {
     char str_user_id[16]; 
     uint64_t user_id;
-    client_t *tmp;
+    client_index_t *tmp;
     size_t len;
     cmd_t cmd = {0};
 
