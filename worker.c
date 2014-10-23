@@ -93,6 +93,8 @@ int broadcast_raw(worker_t *w, void *data, size_t length)
         if (evbuffer_add(bufferevent_get_output(itr->bev), data, length) != 0) {
             err_quit("evbuffer_add");
         }
+        bufferevent_enable(itr->bev, EV_WRITE);
+        itr->notify_flag = 1;
     }
     return 0;
 }
@@ -364,6 +366,10 @@ void client_readcb(struct bufferevent *bev, void *arg)
                     sprintf(str, "[%lu]: ", c->user_id);
                     strncat(str, c->frame->data, c->frame->length);
                     websocket_broadcast(c->worker, str, strlen(str));
+
+                    send_text_frame(bufferevent_get_output(c->bev), "ok", 2);
+                    bufferevent_enable(c->bev, EV_WRITE);
+                    c->state = CLIENT_STATE_WEBSOCKET_RESPONSE_SENT;
                 }
 #endif
 #ifdef WEBSOCKET_PROXY
@@ -385,7 +391,7 @@ websocket_closed:
     if (c->user_id) {
         // delete from hash
         worker_delete_from_hash(c);
-        if (!c->id_confict) {
+        if (!c->conflict_flag) {
             // notify the pusher
             cmd.cmd_no = CMD_DEL_CLIENT;
             cmd.data = (void *)c->user_id;
@@ -412,6 +418,13 @@ void client_writecb(struct bufferevent *bev, void *arg)
     // clear the write cb
     bufferevent_disable(bev, EV_WRITE);
 
+    if (c->close_frame_sent) {
+        goto finished;
+    }
+    if (c->notify_flag) {
+        c->notify_flag = 0;
+        goto finished;
+    }
     switch (c->state) {
     case CLIENT_STATE_HTTP_RESPONSE_SENT:
         c->state = CLIENT_STATE_HTTP_RESPONSE_FINISHED;
@@ -438,12 +451,6 @@ void client_writecb(struct bufferevent *bev, void *arg)
         c->state = CLIENT_STATE_CLOSED;
         goto websocket_closed;
     default:
-        if (c->close_frame_sent) {
-            goto finished;
-        } else if (c->notify_frame_sent) {
-            c->notify_frame_sent = 0;
-            goto finished;
-        }
         err_quit("Opps");
     }
 
@@ -451,7 +458,7 @@ websocket_closed:
     if (c->user_id) {
         // delete from hash
         worker_delete_from_hash(c);
-        if (!c->id_confict) {
+        if (!c->conflict_flag) {
             // notify the pusher
             cmd.cmd_no = CMD_DEL_CLIENT;
             cmd.data = (void *)c->user_id;
@@ -512,7 +519,7 @@ websocket_closed:
         // delete from hash
         worker_delete_from_hash(c);
         // notify the pusher
-        if (!c->id_confict) {
+        if (!c->conflict_flag) {
             cmd.cmd_no = CMD_DEL_CLIENT;
             cmd.data = (void *)c->user_id;
             if (evbuffer_add(bufferevent_get_output(c->worker->bev_pusher[0]), &cmd, sizeof cmd) != 0) {
@@ -606,7 +613,7 @@ void worker_dispatcher_readcb(struct bufferevent *bev, void *arg)
             bufferevent_set_timeouts(bev_client, &timeout, &timeout);
             break;
         default:
-            break;
+            err_quit("Opps");
         }
     }
 }
@@ -686,7 +693,7 @@ void worker_pusher_readcb(struct bufferevent *bev, void *arg)
             send_close_frame(bufferevent_get_output(tmp->bev), "already login", strlen("already login"));
             bufferevent_enable(tmp->bev, EV_WRITE);
             tmp->close_frame_sent = 1;
-            tmp->id_confict = 1;
+            tmp->conflict_flag = 1;
             break;
         case CMD_NOTIFY:
             user_id = (uint64_t)cmd.data;
@@ -697,7 +704,7 @@ void worker_pusher_readcb(struct bufferevent *bev, void *arg)
 
             send_text_frame(bufferevent_get_output(tmp->bev), "message", strlen("message"));
             bufferevent_enable(tmp->bev, EV_WRITE);
-            tmp->notify_frame_sent = 1;
+            tmp->notify_flag = 1;
             break;
         default:
             err_quit("Opps");

@@ -82,10 +82,10 @@ struct client_s {
     uint8_t close_frame_sent;
 
     // id conflict
-    uint8_t id_confict;
+    uint8_t conflict_flag;
 
     // notify send mark
-    uint8_t notify_frame_sent;
+    uint8_t notify_flag;
 };
 
 struct client_index_s {
