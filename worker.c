@@ -364,7 +364,7 @@ void client_readcb(struct bufferevent *bev, void *arg)
                 {
                     char str[128];
                     sprintf(str, "[%lu]: ", c->user_id);
-                    strncat(str, c->frame->data, c->frame->length);
+                    strncat(str, (const char *)c->frame->data, c->frame->length);
                     websocket_broadcast(c->worker, str, strlen(str));
 
                     send_text_frame(bufferevent_get_output(c->bev), "ok", 2);

@@ -1,9 +1,11 @@
 CC=gcc
 RM=rm -rf
-INCLUDE_PATH=$(JUMBO_ROOT)/include
-LIBRARY_PATH=$(JUMBO_ROOT)/lib
-C_FLAGS=-I$(INCLUDE_PATH) -g -Wall# -DTRACE -DDUMP_DATA
-LD_FLAGS=-L$(LIBRARY_PATH) -levent
+#INCLUDE_PATH=$(JUMBO_ROOT)/include
+#LIBRARY_PATH=$(JUMBO_ROOT)/lib
+#C_FLAGS=-I$(INCLUDE_PATH) -g -Wall# -DTRACE -DDUMP_DATA
+#LD_FLAGS=-L$(LIBRARY_PATH) -levent
+C_FLAGS=-g -Wall -DTRACE -DDUMP_DATA
+LD_FLAGS=-levent -lpthread
 HEADERS=$(wildcard *.h)
 SOURCES=$(wildcard *.c)
 
@@ -31,16 +33,16 @@ O4_OBJ=websocket_proxy_server
 all: $(O1_OBJ) $(O2_OBJ) $(O3_OBJ) $(O4_OBJ)
 
 $(O1_OBJ): $(O1_OBJS)
-	$(CC) $(LD_FLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LD_FLAGS)
 
 $(O2_OBJ): $(O2_OBJS)
-	$(CC) $(LD_FLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LD_FLAGS)
 
 $(O3_OBJ): $(O3_OBJS)
-	$(CC) $(LD_FLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LD_FLAGS)
 
 $(O4_OBJ): $(O4_OBJS)
-	$(CC) $(LD_FLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LD_FLAGS)
 
 
 %.o1: %.c $(HEADERS)
