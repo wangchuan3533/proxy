@@ -1,2 +1,8 @@
-proxy server using libevent
+# proxy server using libevent
 
+## TODO:
+* use auto tools
+* memory/connection pool
+* monitoring worker threads
+* use hash to dispatch
+* switch between thread and process module
